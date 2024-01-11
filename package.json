@@ -1,0 +1,22 @@
+{
+  "name": "backend-project",
+  "version": "1.0.0",
+  "description": "a backend tutorial for learning backend",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "javaScript",
+    "backend",
+    "youtube",
+    "Mern-Stack"
+  ],
+  "author": "Pritam Ghosh",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1"
+  }
+}
