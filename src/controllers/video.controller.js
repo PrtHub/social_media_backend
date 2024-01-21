@@ -60,45 +60,62 @@ const publishAVideo = asyncHandler(async (req, res) => {
   // Upload the video to Cloudinary
   // Create a new video document in the database
 
-    const { title, description } = req.body;
+  const { title, description } = req.body;
 
-    if ([title, description].some((field) => field.trim() === "")) {
-      throw new ApiError(400, "All fields mustn't be empty");
-    }
+  if ([title, description].some((field) => field.trim() === "")) {
+    throw new ApiError(400, "All fields mustn't be empty");
+  }
 
-    const videoLocalpath = req.files?.videoFile[0].path;
-    const thumbnailLocalpath = req.files?.thumbnail[0].path;
+  const videoLocalpath = req.files?.videoFile[0].path;
+  const thumbnailLocalpath = req.files?.thumbnail[0].path;
 
-    if (!videoLocalpath) {
-      throw new ApiError(400, "video is required");
-    }
-    if (!thumbnailLocalpath) {
-      throw new ApiError(400, "thumbnail is required");
-    }
+  if (!videoLocalpath) {
+    throw new ApiError(400, "video is required");
+  }
+  if (!thumbnailLocalpath) {
+    throw new ApiError(400, "thumbnail is required");
+  }
 
-    const uploadedVideoFile = await uploadOnCloudinary(videoLocalpath);
-    const uploadedThumbnailFile = await uploadOnCloudinary(thumbnailLocalpath);
+  const uploadedVideoFile = await uploadOnCloudinary(videoLocalpath);
+  const uploadedThumbnailFile = await uploadOnCloudinary(thumbnailLocalpath);
 
-    if (!uploadedVideoFile) {
-      throw new ApiError(400, "Video upload is required");
-    }
-    if (!uploadedThumbnailFile) {
-      throw new ApiError(400, "Video upload is required");
-    }
+  if (!uploadedVideoFile) {
+    throw new ApiError(400, "Video upload is required");
+  }
+  if (!uploadedThumbnailFile) {
+    throw new ApiError(400, "Video upload is required");
+  }
 
-    const video = await Video.create({
-      videoFile: uploadedVideoFile.secure_url,
-      thumbnail: uploadedThumbnailFile.secure_url,
-      title,
-      description,
-    });
+  const video = await Video.create({
+    videoFile: uploadedVideoFile.secure_url,
+    thumbnail: uploadedThumbnailFile.secure_url,
+    title,
+    description,
+  });
 
-    console.log(video);
+  console.log(video);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video, "publish the video successfully"));
+});
+
+const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  try {
+    const video = await Video.findById(videoId);
+
+    if (!video) throw new ApiError(400, "Video not found");
 
     return res
       .status(200)
-      .json(new ApiResponse(200, video, "publish the video successfully"));
- 
+      .json(new ApiResponse(200, video, "get the video successfully"));
+  } catch (error) {
+    throw new ApiError(500, "Error while getting the video");
+  }
 });
 
-export { getAllVideos, publishAVideo };
+
+
+export { getAllVideos, publishAVideo, getVideoById };
