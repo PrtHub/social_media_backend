@@ -5,7 +5,7 @@ import { getUserChannelSubscribers, toggleSubscription } from "../controllers/su
 const router = Router();
 router.use(verifyJWT);
 
-router.route('/c/:channelId').post(toggleSubscription)
-router.route("/u/:channelId").get(getUserChannelSubscribers)
+router.route('/c/:channelId').post(toggleSubscription).get(getUserChannelSubscribers)
+
 
 export default router

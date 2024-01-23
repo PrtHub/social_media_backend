@@ -1,3 +1,4 @@
+import mongoose, { isValidObjectId } from "mongoose";
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -12,6 +13,10 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   const subscriberId = req.user?._id;
 
+  if (!isValidObjectId(channelId)) {
+    throw new ApiError(400, "Invalid Channel Id");
+  }
+
   try {
     const existingSubscription = await Subscription.findOne({
       channel: channelId,
@@ -19,22 +24,29 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     });
 
     if (existingSubscription) {
-      const unsubscribed = await Subscription.findByIdAndDelete(existingSubscription._id);
-      res.status(200).json(new ApiResponse(200, unsubscribed, "Unsubscribed successfully"));
+      const unsubscribed = await Subscription.findByIdAndDelete(
+        existingSubscription._id
+      );
+      res
+        .status(200)
+        .json(new ApiResponse(200, unsubscribed, "Unsubscribed successfully"));
     } else {
       const newSubscription = new Subscription({
         channel: channelId,
         subscriber: subscriberId,
       });
-     const subscription =  await newSubscription.save({ validateBeforeSave: false });
-      res.status(200).json(new ApiResponse(200, subscription, "Subscribed successfully"));
+      const subscription = await newSubscription.save({
+        validateBeforeSave: false,
+      });
+      res
+        .status(200)
+        .json(new ApiResponse(200, subscription, "Subscribed successfully"));
     }
   } catch (error) {
     throw new ApiError(500, "Error while changing subscription");
   }
 });
 
-// controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   //Extracts channelId from request parameters
   //uses $match to filter the subscription for the specified channel
@@ -42,15 +54,17 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   //uses $unwind to flattern the nested array
   //uses $project to specify the fields to includes in the response
   //return the list of subscribers
+
   const { channelId } = req.params;
-  console.log(channelId);
+  if (!isValidObjectId(channelId)) {
+    throw new ApiError(400, "Invalid Channel Id");
+  }
 
   try {
-
     const subscribers = await Subscription.aggregate([
       {
         $match: {
-          channel: channelId,
+          channel: new mongoose.Types.ObjectId(channelId),
         },
       },
       {
@@ -63,29 +77,34 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
       },
       { $unwind: "$subscriberDetails" },
       {
-        $count: "totalSubscribers" 
-      },
-      {
         $project: {
           _id: 1,
-          subscriber: "$subscriberDetails._id",
-          username: "$subscriberDetails.username",
-          avatar: "$subscriberDetails.avatar",
+          subscriber: {
+            _id: "$subscriberDetails._id",
+            username: "$subscriberDetails.username",
+            fullname: "$subscriberDetails.fullname",
+            avatar: "$subscriberDetails.avatar",
+          },
         },
       },
-    ])
-    const subscribersCount = subscribers.length;
-    console.log(subscribersCount)
+      {
+        $count: "totalSubscribers",
+      },
+    ]);
+
+    if (subscribers.length === 0) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, subscribers, "No subscriber yet"));
+    }
     return res
       .status(200)
       .json(
         new ApiResponse(200, subscribers, "Subscribers fetched successfully")
       );
-
-      
   } catch (error) {
     throw new ApiError(500, "Error while fetching subscribers");
   }
 });
 
-export { toggleSubscription,getUserChannelSubscribers };
+export { toggleSubscription, getUserChannelSubscribers };
