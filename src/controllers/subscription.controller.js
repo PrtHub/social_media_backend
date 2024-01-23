@@ -3,6 +3,7 @@ import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { response } from "express";
 
 const toggleSubscription = asyncHandler(async (req, res) => {
   // extract the channelId and access the subscriberId
@@ -31,16 +32,13 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, unsubscribed, "Unsubscribed successfully"));
     } else {
-      const newSubscription = new Subscription({
+      const newSubscription = await Subscription.create({
         channel: channelId,
         subscriber: subscriberId,
       });
-      const subscription = await newSubscription.save({
-        validateBeforeSave: false,
-      });
       res
         .status(200)
-        .json(new ApiResponse(200, subscription, "Subscribed successfully"));
+        .json(new ApiResponse(200, newSubscription, "Subscribed successfully"));
     }
   } catch (error) {
     throw new ApiError(500, "Error while changing subscription");
@@ -107,4 +105,53 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   }
 });
 
-export { toggleSubscription, getUserChannelSubscribers };
+
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+  const { subscriberId } = req.params
+
+  if(!isValidObjectId(subscriberId)){
+    throw new ApiError(404, "Invalid subscriberId")
+  }
+
+   const subscribedChannels = await Subscription.aggregate([
+     { 
+      $match: {
+        subscriber:  new mongoose.Types.ObjectId(subscriberId),
+      }
+     },
+     {
+      $lookup: {
+        from: "User",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channelDetails"
+      }
+     },
+     {
+      $unwind: '$channelDetails'
+     },
+     {
+      $project: {
+        _id: 1,
+        channel: {
+          _id: "$channelDetails._id",
+          username: "$channelDetails.username",
+          avatar: "$channelDetails.avatar",
+        }
+      }
+     }
+   ])  
+
+   if(subscribedChannels.length === 0){
+    return res
+        .status(200)
+        .json(new ApiResponse(200, subscribedChannels, "No channel subscribed yet"));
+   }
+
+   return res
+   .status(200)
+   .json(new ApiResponse(200, subscribedChannels, "Subscribed channels fetched successfully"));
+
+})
+
+export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels};
