@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const playListSchema = new Schema(
   {
@@ -8,7 +8,7 @@ const playListSchema = new Schema(
     },
     description: {
       type: String,
-      required: true,
+      // required: true,
     },
     videos: [
       {
