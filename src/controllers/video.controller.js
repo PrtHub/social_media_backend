@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -94,6 +95,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
     thumbnail: uploadedThumbnailFile.secure_url,
     title,
     description,
+    owner: req.user?.id,
+    duration: uploadedVideoFile.duration,
+    views: 0
   });
 
   console.log(video);
