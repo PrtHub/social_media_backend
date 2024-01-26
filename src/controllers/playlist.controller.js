@@ -86,44 +86,6 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   }
 });
 
-const getUserPlaylists = asyncHandler(async (req, res) => {
-  const { userId } = req.params;
-
-  if (!isValidObjectId(userId)) {
-    throw new ApiError(404, "Invalid user id");
-  }
-
-  const playlist = await PlayList.find({ owner: userId });
-
-  if (!playlist) {
-    throw new ApiError(404, "No user playlist found");
-  }
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, playlist, "User playlists fetched successfully")
-    );
-});
-
-const getPlaylistById = asyncHandler(async (req, res) => {
-  const { playlistId } = req.params;
-
-  if (!isValidObjectId(playlistId)) {
-    throw new ApiError(404, "Invalid playlist id");
-  }
-
-  const playlist = await PlayList.findById(playlistId);
-
-  if (!playlist) {
-    throw new ApiError(404, "No playlist found");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, playlist, "Playlists fetched successfully"));
-});
-
 const updatePlaylist = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   const { name, description } = req.body;
@@ -148,12 +110,12 @@ const updatePlaylist = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-  
+
     return res
       .status(200)
       .json(new ApiResponse(200, playlist, "playlist updated successfully"));
   } catch (error) {
-    throw new ApiError(500, "Error while updating playlist")
+    throw new ApiError(500, "Error while updating playlist");
   }
 });
 
@@ -165,18 +127,60 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Invalid playlist id");
   }
 
- try {
-     const playlist = await PlayList.findByIdAndDelete({
-       _id: playlistId,
-       owner: userId,
-     });
-   
-     return res
-     .status(200)
-     .json(new ApiResponse(200, playlist, "playlist deleted successfully"));
- } catch (error) {
-    throw new ApiError(500, "Error while deleting playlist")
- }
+  try {
+    const playlist = await PlayList.findByIdAndDelete({
+      _id: playlistId,
+      owner: userId,
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, playlist, "playlist deleted successfully"));
+  } catch (error) {
+    throw new ApiError(500, "Error while deleting playlist");
+  }
+});
+
+const getUserPlaylists = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(404, "Invalid user id");
+  }
+
+  const playlist = await PlayList.find({ owner: userId })
+    .populate("videos", { _id: 0 })
+    .populate("owner", "username fullname avatar");
+
+  if (!playlist) {
+    throw new ApiError(404, "No user playlist found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, playlist, "User playlists fetched successfully")
+    );
+});
+
+const getPlaylistById = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(404, "Invalid playlist id");
+  }
+
+  const playlist = await PlayList.findById(playlistId)
+    .populate("videos", { _id: 0 /* Define projection for videos */ })
+    .populate("owner", "username fullname avatar");
+
+  if (!playlist) {
+    throw new ApiError(404, "No playlist found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, playlist, "Playlists fetched successfully"));
 });
 
 export {
@@ -186,5 +190,5 @@ export {
   addVideoToPlaylist,
   removeVideoFromPlaylist,
   updatePlaylist,
-  deletePlaylist
+  deletePlaylist,
 };
