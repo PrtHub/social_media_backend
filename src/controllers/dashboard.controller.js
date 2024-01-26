@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Like } from "../models/like.model.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Video } from "../models/video.model.js";
@@ -6,11 +7,11 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getChannelStats = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
+  const userId = req.user?._id
 
   const channelStats = await Promise.all([
     Video.aggregate([
-      { $match: { owner: channelId } },
+      { $match: { owner: new mongoose.Types.ObjectId(userId) } },
       {
         $group: {
           _id: null,
@@ -19,8 +20,8 @@ const getChannelStats = asyncHandler(async (req, res) => {
         },
       },
     ]),
-    Subscription.countDocuments({ channel: channelId }),
-    Like.countDocuments({ video: { $elemMatch: { owner: channelId } } }),
+    Subscription.countDocuments({ channel: new mongoose.Types.ObjectId(userId) }),
+    Like.countDocuments({ video: { $elemMatch: { owner: new mongoose.Types.ObjectId(userId) } } }),
   ]);
 
   const [videoStats, subscriberCount, totalLikes] = channelStats;
@@ -42,9 +43,9 @@ const getChannelVideos = asyncHandler(async (req, res) => {
 
   try {
     const videos = await Video.find({ owner: channelId })
-    //   .sort({ createdAt: -1 })
-    //   .skip((page - 1) * limit)
-    //   .limit(limit);
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     return res.status(200).json(
       new ApiResponse(200, videos, "Channel videos fetched successfully")
