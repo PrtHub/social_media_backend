@@ -112,7 +112,7 @@ npm instal
    
 4. Start the server:
 ```
-npm start
+npm run dev
 ```
 
 ## Usage
@@ -130,4 +130,4 @@ I welcome contributions! Please follow these guidelines:
 
 ## License
 
-This project is licensed under the [Pritam Ghosh] - see the [LICENSE.md] file for details.
+This project is licensed under the [Pritam Ghosh](https://github.com/PrtHub)
